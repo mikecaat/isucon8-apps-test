@@ -273,7 +273,7 @@ func getEvent(eventID, loginUserID int64) (*Event, error) {
 		sheet.ReservedAtUnix = reservation.ReservedAt.Unix()
 
 		event.Sheets[sheet.Rank].Detail = append(event.Sheets[sheet.Rank].Detail, &sheet)
-		event.Sheets[sheet.Rank].Price = sheet.Price
+		event.Sheets[sheet.Rank].Price = event.Price + sheet.Price
 	}
 
 	event.Total = sheetsTotal
