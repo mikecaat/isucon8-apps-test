@@ -91,6 +91,12 @@ var sheetsRankTotal = map[string]int{
 	"B": 0,
 	"C": 0,
 }
+var sheetsRankPrices = map[string]int64{
+	"S": 0,
+	"A": 0,
+	"B": 0,
+	"C": 0,
+}
 
 func sessUserID(c echo.Context) int64 {
 	sess, _ := session.Get("session", c)
@@ -241,8 +247,6 @@ func getEvent(eventID, loginUserID int64) (*Event, error) {
 		"C": &Sheets{},
 	}
 
-	//rows, err := db.Query("SELECT * FROM sheets ORDER BY `rank`, num")
-
 	rows, err := db.Query("SELECT * FROM reservations r INNER JOIN sheets s ON r.sheet_id = s.id WHERE event_id = ? AND canceled_at IS NULL GROUP BY event_id, sheet_id HAVING reserved_at = MIN(reserved_at)", event.ID)
 	if err != nil {
 		return nil, err
@@ -271,7 +275,6 @@ func getEvent(eventID, loginUserID int64) (*Event, error) {
 		sheet.ReservedAtUnix = reservation.ReservedAt.Unix()
 
 		event.Sheets[sheet.Rank].Detail = append(event.Sheets[sheet.Rank].Detail, &sheet)
-		event.Sheets[sheet.Rank].Price = event.Price + sheet.Price
 	}
 
 	event.Total = sheetsTotal
@@ -280,6 +283,7 @@ func getEvent(eventID, loginUserID int64) (*Event, error) {
 		event.Remains -= eventOccupied[r]
 		event.Sheets[r].Total = sheetsRankTotal[r]
 		event.Sheets[r].Remains = event.Sheets[r].Total - eventOccupied[r]
+		event.Sheets[r].Price = event.Price + sheetsRankPrices[r]
 	}
 
 	return &event, nil
@@ -376,15 +380,17 @@ func main() {
 			return nil
 		}
 
-		rows, err := db.Query("SELECT `rank`, count(id)  FROM sheets GROUP BY `rank`")
+		rows, err := db.Query("SELECT `rank`, count(id), price FROM sheets GROUP BY `rank`")
 		for rows.Next() {
 			var rank string
 			var rankTotal int
-			if err := rows.Scan(&rank, &rankTotal); err != nil {
+			var rankPrice int64
+			if err := rows.Scan(&rank, &rankTotal, &rankPrice); err != nil {
 				return err
 			}
 			sheetsTotal += rankTotal
 			sheetsRankTotal[rank] = rankTotal
+			sheetsRankPrices[rank] = rankPrice
 		}
 
 		return c.NoContent(204)
