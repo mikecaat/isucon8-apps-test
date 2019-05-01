@@ -264,9 +264,6 @@ func getEvent(eventID, loginUserID int64) (*Event, error) {
 		}
 
 		eventOccupied[sheet.Rank]++
-		event.Sheets[sheet.Rank].Price = event.Price + sheet.Price
-		//event.Total++
-		//event.Sheets[sheet.Rank].Total++
 
 		//err := db.QueryRow("SELECT * FROM reservations WHERE event_id = ? AND sheet_id = ? AND canceled_at IS NULL GROUP BY event_id, sheet_id HAVING reserved_at = MIN(reserved_at)", event.ID, sheet.ID).Scan(&reservation.ID, &reservation.EventID, &reservation.SheetID, &reservation.UserID, &reservation.ReservedAt, &reservation.CanceledAt)
 		sheet.Mine = reservation.UserID == loginUserID
@@ -278,8 +275,9 @@ func getEvent(eventID, loginUserID int64) (*Event, error) {
 	}
 
 	event.Total = sheetsTotal
+	event.Remains = sheetsTotal
 	for _, r := range []string{"S", "A", "B", "C"} {
-		event.Remains = event.Total - eventOccupied[r]
+		event.Remains -= eventOccupied[r]
 		event.Sheets[r].Total = sheetsRankTotal[r]
 		event.Sheets[r].Remains = event.Sheets[r].Total - eventOccupied[r]
 	}
